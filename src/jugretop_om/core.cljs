@@ -1,7 +1,11 @@
 (ns ^:figwheel-always jugretop-om.core
-    (:require [om.core :as om :include-macros true]
-              [om.dom :as dom :include-macros true]
-              [ajax.core :refer [GET POST json-response-format raw-response-format]]))
+    (:require
+        [om.core :as om :include-macros true]
+        [om.dom :as dom :include-macros true]
+        [kioo.om :refer [set-style set-attr do-> substitute listen] :as kio :include-macros true]
+        [kioo.core :refer [handle-wrapper]]
+        [ajax.core :refer [GET POST json-response-format]])
+    (:require-macros [kioo.om :refer [defsnippet deftemplate]]))
 
 (enable-console-print!)
 
@@ -10,32 +14,23 @@
 ;; define your app data so that it doesn't get over-written on reload
 
 (def app-state (atom {
-                          :text "Hello asdasdworld!"
-                          :posts []
-                          }))
+    :text "Hello asdasdworld!"
+    :posts []
+}))
 
 
-(defn hw-widget [data owner]
-  (reify
-    om/IRender
-    (render [this]
-            (dom/h1 nil (:text data)))))
+(defsnippet post-view "public/template.html" [:div#post]
+    [{mid :mid body :body {uname :uname uid :uid} :user}]
+    {
+        [:.post-mid] (kio/content (str "#" mid))
+        [:.nickname] (kio/content (str "@" uname))
+        [:.avatar] (kio/set-attr :src (str "http://i.juick.com/a/" uid ".png"))
+        [:.post-text] (kio/content body)
+    })
 
 
-(defn post-widget [{mid :mid body :body {uname :uname} :user} owner]
-  (reify
-    om/IRender
-    (render [this]
-        (dom/div nil
-            (dom/div #js {:className "panel panel-default"}
-                (dom/div #js {:className "panel-heading"}
-                    (dom/div #js {:className "panel-title"}
-                        (str "@" uname)))
-                (dom/div #js {:className "panel-body"} body)
-                (dom/div #js {:className "panel-footer"} (str "#" mid)))))))
-
-
-(def testdata [{:body "темно http://www.nasa.gov/multimedia/nasatv/ это вам не кино", :user {:uname "den-po", :uid 15152}, :replies 6, :timestamp "2015-11-06 21:01:40", :mid 2809764, :daypart "18:00-24:00", :day "06-11-2015"}])
+(defn post-widget [data]
+    (om/component (post-view data)))
 
 
 (defn posts []
@@ -52,9 +47,10 @@
               :handler (fn [response] (swap! app-state assoc :posts response))))
       om/IRender
       (render [_]
+          (dom/div #js {:className "container"}
           (dom/div nil (dom/h2 nil "HEllo, codingteam")
           (om/build-all post-widget (posts) {:key :id})
-          ))))
+          )))))
 
 
 

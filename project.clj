@@ -8,6 +8,7 @@
                  [org.clojure/clojurescript "1.7.122"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [sablono "0.3.6"]
+                 [kioo "0.4.1"] 
                  [org.omcljs/om "0.9.0"]
                  [cljs-ajax "0.5.1"]]
 
@@ -49,7 +50,7 @@
              ;; Server Ring Handler (optional)
              ;; if you want to embed a ring handler into the figwheel http-kit
              ;; server, this is for simple ring servers, if this
-             ;; doesn't work for you just run your own server :)
+             ;; doesn't work for you just run your own server :
              ;; :ring-handler hello_world.server/handler
 
              ;; To be able to open files in your editor from the heads up display

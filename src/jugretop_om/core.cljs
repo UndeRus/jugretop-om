@@ -20,12 +20,13 @@
 
 
 (defsnippet post-view "public/template.html" [:div#post]
-    [{mid :mid body :body {uname :uname uid :uid} :user}]
+    [{mid :mid replies :replies body :body {uname :uname uid :uid} :user}]
     {
         [:.post-mid] (kio/content (str "#" mid))
         [:.nickname] (kio/content (str "@" uname))
         [:.avatar] (kio/set-attr :src (str "http://i.juick.com/a/" uid ".png"))
         [:.post-text] (kio/content body)
+        [:.post-replies] (kio/content replies)
     })
 
 
@@ -48,27 +49,26 @@
       om/IRender
       (render [_]
           (dom/div #js {:className "container"}
-          (dom/div nil (dom/h2 nil "HEllo, codingteam")
-          (om/build-all post-widget (posts) {:key :id})
-          )))))
+            (dom/div nil (dom/h2 nil "Juick React Om"))
+            (om/build-all post-widget (posts) {:key :id})))))
 
 
 
 (comment
 
-(defn contact-view [contact owner]
+  (defn contact-view [contact owner]
     (reify
-        om/IRender
-        (render [this]
-            (dom/li nil (str contact)))))
+      om/IRender
+      (render [this]
+              (dom/li nil (str contact)))))
 
-(defn post-list [data owner]
+  (defn post-list [data owner]
     (reify
-        om/IRender
-        (render [this] (apply dom/ul nil
-            (om/build-all contact-view (:posts data))))))
+      om/IRender
+      (render [this] (apply dom/ul nil
+                            (om/build-all contact-view (:posts data))))))
 
-)
+  )
 
 
 

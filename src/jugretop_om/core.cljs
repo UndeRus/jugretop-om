@@ -2,6 +2,7 @@
     (:require
         [om.core :as om :include-macros true]
         [om.dom :as dom :include-macros true]
+        [om-tools.core :refer-macros [defcomponent]]
         [kioo.om :refer [set-style set-attr do-> substitute listen] :as kio :include-macros true]
         [kioo.core :refer [handle-wrapper]]
         [ajax.core :refer [GET POST json-response-format]]
@@ -22,27 +23,32 @@
 
 
 (defn unescape-html [escaped-string]
-  (-> escaped-string
-    (s/replace #"&amp;" "&")
-    (s/replace #"&lt;" "<")
-    (s/replace #"&gt;" ">")
-    (s/replace #"&quot;" "\"")))
+    (-> escaped-string
+      (s/replace #"&amp;" "&")
+      (s/replace #"&lt;" "<")
+      (s/replace #"&gt;" ">")
+      (s/replace #"&quot;" "\"")))
 
 
 
 (defsnippet post-view "public/template.html" [:div#post]
     [{mid :mid replies :replies body :body {uname :uname uid :uid} :user}]
     {
-        [:.post-mid] (kio/content (str "#" mid))
+        [:.post-mid] (do-> (kio/content (str "#" mid))
+                           (kio/set-attr :href (str "https://juick.com/" mid)
+                                         :target "_blank"))
+        [:.post-url] (kio/set-attr :href (str "http://jugregator.org/p/" mid)
+                                   :target "_blank")
         [:.nickname] (kio/content (str "@" uname))
         [:.avatar] (kio/set-attr :src (str "http://i.juick.com/a/" uid ".png"))
-        [:.post-text] (kio/content (unescape-html body))
+        [:.post-text] (kio/html-content (unescape-html body))
         [:.post-replies] (kio/content replies)
     })
 
 
-(defn post-widget [data]
-    (om/component (post-view data)))
+(defcomponent post-widget [data _]
+  (render [_]
+    (post-view data)))
 
 
 (defn posts []

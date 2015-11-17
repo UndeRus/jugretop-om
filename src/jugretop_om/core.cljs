@@ -7,6 +7,8 @@
         [kioo.core :refer [handle-wrapper]]
         [ajax.core :refer [GET POST json-response-format]]
         [clojure.string :refer [replace] :as s]
+        [jugretop-om.state :refer [app-state]]
+        [jugretop-om.utils :refer [unescape-html]]
         )
     (:require-macros [kioo.om :refer [defsnippet deftemplate]]))
 
@@ -16,18 +18,22 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(def app-state (atom {
-    :text "Hello asdasdworld!"
-    :posts []
-}))
 
 
-(defn unescape-html [escaped-string]
-    (-> escaped-string
-      (s/replace #"&amp;" "&")
-      (s/replace #"&lt;" "<")
-      (s/replace #"&gt;" ">")
-      (s/replace #"&quot;" "\"")))
+
+
+
+
+;;Ajax
+(defn posts [] (om/ref-cursor (:posts (om/root-cursor app-state))))
+
+(defn page [] (om/ref-cursor (:page (om/root-cursor app-state))))
+
+(defn load-feed [page callback]
+  (GET (str "http://s.jugregator.org/api?page=" page)
+      :response-format (json-response-format {:keywords? true})
+      :handler callback))
+;;end
 
 
 
@@ -47,34 +53,33 @@
 
 
 (defcomponent post-widget [data _]
+  (display-name [_] "Post")
   (render [_]
     (post-view data)))
 
 
-(defn posts []
-    (om/ref-cursor (:posts (om/root-cursor app-state))))
+(defsnippet root-view "public/template.html" [:#root]
+  [_]
+  {
+    [:#content] (do-> (kio/content (om/build-all post-widget (posts) {:key :id}))
+                      (listen :on-mount
+                        (fn [] (let [cursor (posts)]
+                                      (load-feed 1 #(om/update! cursor %))))))
+    ;[:#refresh] (listen :onClick (fn [] (do (let [cursor-page (page)
+    ;                                              cursor-posts (posts)]
+    ;                                          (om/update! cursor-page (+ cursor-page 1))
+    ;                                          (load-feed (page) #(swap! app-state assoc :posts %))))))
+  })
 
 
 
-(defn load-feed [page callback]
-  (GET (str "http://s.jugregator.org/api?page=" page)
-      :response-format (json-response-format {:keywords? true})
-      :handler callback))
-
-(defn post-list [data owner]
-  (reify
-      om/IWillMount
-      (will-mount [_]
-        (load-feed 1 #(swap! app-state assoc :posts %)))
-      om/IRender
-      (render [_]
-          (dom/div #js {:className "container"}
-            (dom/div nil (dom/h2 nil "Juick React Om"))
-            (om/build-all post-widget (posts) {:key :id})))))
 
 
+(defn root [data]
+  (om/component (root-view data)))
 
-(om/root post-list app-state
+
+(om/root root app-state
   {:target (. js/document (getElementById "app"))})
 
 (defn on-js-reload []

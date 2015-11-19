@@ -1,6 +1,6 @@
 (ns ^:figwheel-always jugretop-om.state)
 
 (def app-state (atom {
-    :page 1
+    :page 2
     :posts []
 }))

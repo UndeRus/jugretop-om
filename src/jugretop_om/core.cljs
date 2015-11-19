@@ -25,6 +25,7 @@
 
 
 ;;Ajax
+
 (defn posts [] (om/ref-cursor (:posts (om/root-cursor app-state))))
 
 (defn page [] (om/ref-cursor (:page (om/root-cursor app-state))))
@@ -59,16 +60,20 @@
 
 
 (defsnippet root-view "public/template.html" [:#root]
-  [_]
+  [data]
   {
     [:#content] (do-> (kio/content (om/build-all post-widget (posts) {:key :id}))
                       (listen :on-mount
                         (fn [] (let [cursor (posts)]
                                       (load-feed 1 #(om/update! cursor %))))))
-    ;[:#refresh] (listen :onClick (fn [] (do (let [cursor-page (page)
-    ;                                              cursor-posts (posts)]
-    ;                                          (om/update! cursor-page (+ cursor-page 1))
-    ;                                          (load-feed (page) #(swap! app-state assoc :posts %))))))
+    [:#refresh] (listen :onClick (fn [] (let [cursor (om/root-cursor app-state)]
+                                              (om/transact! cursor :page inc)
+                                              (println (:page data))
+                                              (load-feed (get cursor :page)
+                                                (fn [result]
+                                                  (om/transact! cursor :posts #(vec (concat % result)))
+                                                  )))
+                                              ))
   })
 
 

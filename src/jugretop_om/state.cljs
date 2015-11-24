@@ -3,4 +3,5 @@
 (def app-state (atom {
     :page 2
     :posts []
+    :loading true
 }))

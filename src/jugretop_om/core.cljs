@@ -1,12 +1,17 @@
 (ns ^:figwheel-always jugretop-om.core
     (:require
+        [clojure.string :refer [replace] :as s]
+
+        ;;Views
         [om.core :as om :include-macros true]
         [om.dom :as dom :include-macros true]
         [om-tools.core :refer-macros [defcomponent]]
         [kioo.om :refer [set-style set-attr do-> substitute listen] :as kio :include-macros true]
         [kioo.core :refer [handle-wrapper]]
+        ;;Ajax
         [ajax.core :refer [GET POST json-response-format]]
-        [clojure.string :refer [replace] :as s]
+
+        ;;Modules
         [jugretop-om.state :refer [app-state]]
         [jugretop-om.utils :refer [unescape-html]]
         )
@@ -26,14 +31,25 @@
 
 ;;Ajax
 
-(defn posts [] (om/ref-cursor (:posts (om/root-cursor app-state))))
+(defn posts []
+  (om/ref-cursor
+    (:posts (om/root-cursor app-state))))
 
-(defn page [] (om/ref-cursor (:page (om/root-cursor app-state))))
+(defn page []
+  (om/ref-cursor
+    (:page (om/root-cursor app-state))))
 
 (defn load-feed [page callback]
+  (let [cursor (om/root-cursor app-state)]
+  (om/update! cursor [:loading] true)
   (GET (str "http://s.jugregator.org/api?page=" page)
       :response-format (json-response-format {:keywords? true})
-      :handler callback))
+      :handler (fn [result]
+                (callback result)
+                (om/update! cursor [:loading] false)
+                ))
+  ))
+
 ;;end
 
 
@@ -62,18 +78,18 @@
 (defsnippet root-view "public/template.html" [:#root]
   [data]
   {
-    [:#content] (do-> (kio/content (om/build-all post-widget (posts) {:key :id}))
+    [:#content] (do-> (kio/content
+                          (om/build-all post-widget (posts) {:key :id}))
                       (listen :on-mount
                         (fn [] (let [cursor (posts)]
                                       (load-feed 1 #(om/update! cursor %))))))
-    [:#refresh] (listen :onClick (fn [] (let [cursor (om/root-cursor app-state)]
+    [:#refresh] (do-> (listen :onClick (fn [] (let [cursor (om/root-cursor app-state)]
                                               (om/transact! cursor :page inc)
-                                              (println (:page data))
                                               (load-feed (get cursor :page)
                                                 (fn [result]
-                                                  (om/transact! cursor :posts #(vec (concat % result)))
-                                                  )))
-                                              ))
+                                                  (om/transact! cursor :posts #(vec (concat % result))))))))
+                      (kio/set-attr :disabled (:loading (om/root-cursor app-state))))
+
   })
 
 

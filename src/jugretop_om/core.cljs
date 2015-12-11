@@ -31,6 +31,8 @@
 
 ;;Ajax
 
+(defn root-cursor [] (om/root-cursor app-state))
+
 (defn posts []
   (om/ref-cursor
     (:posts (om/root-cursor app-state))))
@@ -75,11 +77,24 @@
     (post-view data)))
 
 
+(defsnippet empty-view "public/template.html" [:div#empty]
+  [_]
+  {})
+
+(defcomponent empty-widget [data _]
+  (display-name [_] "Empty")
+  (render [_]
+    (empty-view data)))
+
+
 (defsnippet root-view "public/template.html" [:#root]
   [data]
   {
     [:#content] (do-> (kio/content
-                          (om/build-all post-widget (posts) {:key :id}))
+                          (let [posts-available (-> (count (posts))
+                                                    (> 0))]
+                            (if posts-available (om/build-all post-widget (posts) {:key :id})
+                                                (om/build empty-widget nil))))
                       (listen :on-mount
                         (fn [] (let [cursor (posts)]
                                       (load-feed 1 #(om/update! cursor %))))))

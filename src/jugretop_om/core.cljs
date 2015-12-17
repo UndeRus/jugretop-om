@@ -11,13 +11,20 @@
         ;;Ajax
         [ajax.core :refer [GET POST json-response-format]]
 
+        ;;Routing
+        [secretary.core :as sec
+                   :include-macros true]
+                  [goog.events :as events]
+                  [goog.history.EventType :as EventType]
         ;;Modules
         [jugretop-om.state :refer [app-state]]
-        [jugretop-om.utils :refer [unescape-html]]
+        [jugretop-om.utils :refer [unescape-html by-id]]
         )
-    (:require-macros [kioo.om :refer [defsnippet deftemplate]]))
+    (:require-macros [kioo.om :refer [defsnippet deftemplate]])
+    (:import goog.History))
 
 (enable-console-print!)
+
 
 ;;(println "Edits to this text should show up in your developer console.")
 
@@ -114,9 +121,41 @@
 (defn root [data]
   (om/component (root-view data)))
 
+(defcomponent root-root-view [data _]
+  (render [_]
+    (root-view data)))
 
+
+(sec/set-config! :prefix "#")
+
+(let [history (History.)
+      navigation EventType/NAVIGATE]
+  (goog.events/listen history
+                     navigation
+                     #(-> % .-token sec/dispatch!))
+  (doto history (.setEnabled true)))
+
+
+(sec/defroute feed-page "/" [page]
+  (om/root root-root-view app-state
+    {:target (by-id "app")}))
+
+
+(defcomponent about-page-view [_ _]
+  (render [_]
+    (dom/div nil "Nothing here now")))
+
+(sec/defroute about-page "/about" []
+  (om/root about-page-view {} {:target (by-id "app")}))
+
+(sec/dispatch! "/")
+
+
+(comment
 (om/root root app-state
   {:target (. js/document (getElementById "app"))})
+
+)
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on

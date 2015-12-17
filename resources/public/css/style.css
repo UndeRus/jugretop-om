@@ -3,3 +3,11 @@
     max-height: 3em;
     padding-right: 0.5em;
 }
+
+.post-text {
+  overflow-x: auto;
+}
+
+#post {
+  margin: 0em;
+}

@@ -7,3 +7,7 @@
       (s/replace #"&lt;" "<")
       (s/replace #"&gt;" ">")
       (s/replace #"&quot;" "\"")))
+
+
+(defn by-id [tag-id]
+  (. js/document (getElementById tag-id)))

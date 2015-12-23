@@ -13,6 +13,7 @@
                  [prismatic/om-tools "0.3.3" :exclusions [org.clojure/clojure]]
                  [datascript "0.13.3"]
                  [secretary "1.2.3"]
+                 [bidi "1.24.0"]
                  [cljs-ajax "0.5.1"]]
 
   :plugins [[lein-cljsbuild "1.1.0"]

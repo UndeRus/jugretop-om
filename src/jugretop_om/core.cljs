@@ -14,8 +14,11 @@
         ;;Routing
         [secretary.core :as sec
                    :include-macros true]
-                  [goog.events :as events]
-                  [goog.history.EventType :as EventType]
+        [goog.events :as events]
+        [goog.history.EventType :as EventType]
+
+
+        [bidi.router :as br]
         ;;Modules
         [jugretop-om.state :refer [app-state]]
         [jugretop-om.utils :refer [unescape-html by-id]]
@@ -126,36 +129,55 @@
     (root-view data)))
 
 
-(sec/set-config! :prefix "#")
-
-(let [history (History.)
-      navigation EventType/NAVIGATE]
-  (goog.events/listen history
-                     navigation
-                     #(-> % .-token sec/dispatch!))
-  (doto history (.setEnabled true)))
-
-
-(sec/defroute feed-page "/" [page]
-  (om/root root-root-view app-state
-    {:target (by-id "app")}))
-
-
 (defcomponent about-page-view [_ _]
   (render [_]
     (dom/div nil "Nothing here now")))
 
-(sec/defroute about-page "/about" []
-  (om/root about-page-view {} {:target (by-id "app")}))
-
-(sec/dispatch! "/")
-
 
 (comment
 (om/root root app-state
-  {:target (. js/document (getElementById "app"))})
-
+  {:target (by-id "app")})
 )
+
+
+(def site-routes ["/" {
+                       "about" :about
+                       "p/" {[[#"^\d+" :id]] :single-post}
+                       [[#"\d+" :page]] :feed-page
+                       "" :index
+                       }])
+
+
+(let [!location (atom nil)
+      router (br/start-router! site-routes
+                               {:on-navigate (fn [location]
+                                              (let [handler (:handler location)
+                                                    params (:route-params location)]
+                                                      (case (:handler location)
+                                                        :index
+                                                        (om/root root-root-view app-state {:target (by-id "app")})
+                                                        :feed-page
+                                                        (do
+                                                          (println (:page params))
+                                                          (swap! app-state assoc :page (:page params))
+                                                          (om/root root-root-view app-state {:target (by-id "app")}))
+                                                        :about
+                                                        (om/root about-page-view {} {:target (by-id "app")})
+                                                        :single-post
+                                                        (println "Single post found " (-> location (:route-params) (:id)))))
+                                              (println location))
+                                :default-location {:handler :index}})]
+
+  ;;(br/set-location! router {:handler :index})
+  )
+
+
+
+
+(def my-routes ["/" {"index.html" :index
+                     "articles/" {"index.html" :article-index
+                                  [:id "/article.html"] :article}}])
+
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
